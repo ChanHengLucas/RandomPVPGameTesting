@@ -1,0 +1,43 @@
+{
+  "name": "RandomPvP",
+  "tree": {
+    "$className": "DataModel",
+
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "Services": {
+        "$path": "src/ServerScriptService/Services"
+      },
+      "Main": {
+        "$path": "src/ServerScriptService/Main.server.lua"
+      },
+      "AcceptanceTests": {
+        "$path": "src/ServerScriptService/AcceptanceTests.server.lua"
+      }
+    },
+
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+      "Shared": {
+        "$path": "src/ReplicatedStorage/Shared"
+      },
+      "Remotes": {
+        "$path": "src/ReplicatedStorage/Remotes"
+      }
+    },
+
+    "ServerStorage": {
+      "$className": "ServerStorage",
+      "Maps": {
+        "$path": "src/ServerStorage/Maps"
+      }
+    },
+
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "StarterPlayerScripts": {
+        "$path": "src/StarterPlayer/StarterPlayerScripts"
+      }
+    }
+  }
+}
