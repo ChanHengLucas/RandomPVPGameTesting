@@ -139,12 +139,38 @@ function RoundService.EndRound()
 		local ts = require(TeamService)
 		if ts.ClearTeams then ts.ClearTeams() end
 	end
+
+	-- Clear all inventories
+	local InventorySvc = script.Parent:FindFirstChild("InventoryService")
+	if InventorySvc then
+		local invSvc = require(InventorySvc)
+		for _, player in ipairs(Players:GetPlayers()) do
+			if invSvc.ClearInventory then invSvc.ClearInventory(player) end
+		end
+	end
+
 	for _, player in ipairs(Players:GetPlayers()) do
 		player.RespawnTime = DEFAULT_RESPAWN_TIME
-		-- Force-respawn dead players so they're alive for the next round
+
+		-- Strip all tools (players get fresh tools next round start)
+		local backpack = player:FindFirstChild("Backpack")
+		if backpack then
+			for _, child in ipairs(backpack:GetChildren()) do
+				if child:IsA("Tool") then child:Destroy() end
+			end
+		end
 		local char = player.Character
+		if char then
+			for _, child in ipairs(char:GetChildren()) do
+				if child:IsA("Tool") then child:Destroy() end
+			end
+		end
+
+		-- Heal to full and force-respawn dead players
 		local hum = char and char:FindFirstChild("Humanoid")
-		if not hum or hum.Health <= 0 then
+		if hum and hum.Health > 0 then
+			hum.Health = hum.MaxHealth
+		else
 			pcall(function() player:LoadCharacter() end)
 		end
 	end
@@ -315,7 +341,16 @@ local function runCycle()
 		task.wait(1)
 	end
 
+	local MIN_PLAYERS = 2
+
 	while true do
+		-- Wait for minimum players before starting a round
+		while #Players:GetPlayers() < MIN_PLAYERS do
+			RoundService.SetState("Lobby")
+			fireRoundStateUpdate()
+			task.wait(2)
+		end
+
 		local roundOk, roundErr = pcall(function()
 		RoundService.SetState("Voting")
 		fireRoundStateUpdate()

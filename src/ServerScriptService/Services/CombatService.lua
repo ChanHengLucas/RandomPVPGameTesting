@@ -68,6 +68,10 @@ if remotes then
 	local RequestAttack = remotes:FindFirstChild("RequestAttack")
 	if RequestAttack and RequestAttack:IsA("RemoteEvent") then
 		RequestAttack.OnServerEvent:Connect(function(player)
+			local st = RoundService.GetState()
+			if st ~= "ActiveRound" and st ~= "SuddenDeath" then
+				return
+			end
 			if RoundService.HasAnyProtection(player) then
 				return
 			end

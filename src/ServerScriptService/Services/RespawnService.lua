@@ -63,12 +63,33 @@ local function grantStarterMaterials(player)
 	end
 end
 
+local function stripAllTools(player)
+	local backpack = player:FindFirstChild("Backpack")
+	if backpack then
+		for _, child in ipairs(backpack:GetChildren()) do
+			if child:IsA("Tool") then child:Destroy() end
+		end
+	end
+	local char = player.Character
+	if char then
+		for _, child in ipairs(char:GetChildren()) do
+			if child:IsA("Tool") then child:Destroy() end
+		end
+	end
+end
+
 local function onSpawn(player)
 	task.defer(function()
-		grantStarterTools(player)
-		grantStarterMaterials(player)
-		if RoundService.IsRespawnMode() then
-			RoundService.SetSpawnProtection(player, 1)
+		local st = RoundService.GetState()
+		if st == "ActiveRound" or st == "SuddenDeath" then
+			grantStarterTools(player)
+			grantStarterMaterials(player)
+			if RoundService.IsRespawnMode() then
+				RoundService.SetSpawnProtection(player, 1)
+			end
+		else
+			-- In lobby/voting/intermission: no tools
+			stripAllTools(player)
 		end
 	end)
 end

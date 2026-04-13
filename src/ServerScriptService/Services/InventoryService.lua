@@ -107,6 +107,12 @@ function InventoryService.HasItem(player, itemName, amount)
 	return (inv[itemName] or 0) >= amount
 end
 
+function InventoryService.ClearInventory(player)
+	if not player or not player:IsA("Player") then return end
+	inventories[player] = {}
+	fireInventoryUpdate(player, {})
+end
+
 -- Init: PlayerAdded / PlayerRemoving
 Players.PlayerAdded:Connect(function(player)
 	ensureInventory(player)
