@@ -421,6 +421,7 @@ local function runCycle()
 			end
 		end
 
+		local skipRound = false
 		if (mode == "SL_FFA" or mode == "SL_TDM") and MapLoadService then
 			local mls = require(MapLoadService)
 			local stormRadius = mls.GetStormMaxRadius and mls.GetStormMaxRadius()
@@ -440,10 +441,11 @@ local function runCycle()
 					local vs = require(VotingService)
 					if vs.SetLastPlayedMode then vs.SetLastPlayedMode(mode) end
 				end
-				goto continue
+				skipRound = true
 			end
 		end
 
+		if not skipRound then
 		RoundService.SetState("ActiveRound")
 		RoundService.StartRound()
 		fireRoundStateUpdate()
@@ -554,7 +556,9 @@ local function runCycle()
 			winnerTeamId = getWinnerRTDM()
 		end
 		fireWinnerNotification(winnerPlayer, winnerTeamId)
+		end -- end if not skipRound
 
+		if not skipRound then
 		RoundService.EndRound()
 		local MapLoadSvc = script.Parent:FindFirstChild("MapLoadService")
 		if MapLoadSvc then
@@ -581,7 +585,7 @@ local function runCycle()
 			fireRoundStateUpdate()
 			task.wait(1)
 		end
-		::continue::
+		end -- end if not skipRound (EndRound block)
 	end
 end
 
