@@ -38,9 +38,9 @@ Create a folder named **Pickups**. Add parts whose names match `ItemDefs.Pickups
 - **RockPickup**
 - **WoodPickup** (Phase 2)
 
-Create a folder named **Ores**. Add ore node parts (basic Parts are fine):
-- **StoneOreNode**, **CopperOreNode**, **IronOreNode**, **GoldOreNode**
-- **SapphireOreNode**, **EmeraldOreNode**, **RubyOreNode**, **DiamondOreNode** (see MiningDefs for stats)
+Create a folder named **Ores**. Add ore node Models, all named **OreNode** (ore type is decided by RNG at drop time, not by the node itself):
+- Each OreNode is a Model containing clustered rock BaseParts
+- All nodes are generic; do NOT create ore-type-specific nodes
 
 Create a folder named **Trees**. Add tree parts:
 - **OakTree**, **AppleTree**, **OrangeTree** (see ChoppingDefs)

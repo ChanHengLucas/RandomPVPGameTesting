@@ -19,10 +19,10 @@ return {
 		{ itemName = "String", weight = 40 },
 	},
 	Angel = {
-		{ itemName = "GodlyOre", weight = 25 },
+		{ itemName = "AngelicOre", weight = 25 },
 	},
 	Demon = {
-		{ itemName = "UnholyOre", weight = 25 },
+		{ itemName = "DemonicOre", weight = 25 },
 	},
 	Soldier = {
 		{ itemName = "Pistol", weight = 5 },

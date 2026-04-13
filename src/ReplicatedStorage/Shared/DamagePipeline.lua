@@ -36,8 +36,8 @@ end
 local function normalizeAffinity(affinity)
 	if not affinity or type(affinity) ~= "string" then return nil end
 	local a = affinity:lower()
-	if a == "angelic" or a == "godly" then return "angelic" end
-	if a == "demonic" or a == "unholy" then return "demonic" end
+	if a == "angelic" then return "angelic" end
+	if a == "demonic" then return "demonic" end
 	return nil
 end
 

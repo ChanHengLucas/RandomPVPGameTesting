@@ -3,6 +3,7 @@
 	Handles RequestChop: player chops a tree node.
 	Validates: part in workspace.Trees, distance <= 10, cooldown 0.45s, axe tier.
 	Integer hits model: HITS_TO_BREAK per axe tier. On break: Wood [3,5], Apple 35%, Orange 20%.
+	Supports both Model-based and BasePart-based tree nodes.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -16,8 +17,23 @@ local nodeHitsRemaining = {}
 local ChoppingDefs
 local InventoryService
 
+local treesFolder = nil
+
 local function distance3D(a, b)
 	return (a - b).Magnitude
+end
+
+-- Resolve a clicked BasePart to its parent tree node (Model or BasePart) in the Trees folder
+local function resolveTreeNode(clickedPart)
+	if not treesFolder then return nil, nil end
+	local current = clickedPart
+	while current and current ~= treesFolder do
+		if current.Parent == treesFolder then
+			return current, current:IsA("Model") and current:GetPivot().Position or current.Position
+		end
+		current = current.Parent
+	end
+	return nil, nil
 end
 
 local function getEquippedTool(player)
@@ -77,28 +93,44 @@ local function getNodeDef(partName)
 	return nil
 end
 
-local function respawnNode(part, def)
+local function setNodeVisible(node, visible)
+	if node:IsA("Model") then
+		for _, child in ipairs(node:GetDescendants()) do
+			if child:IsA("BasePart") then
+				child.Transparency = visible and 0 or 1
+				child.CanCollide = visible
+			end
+		end
+	elseif node:IsA("BasePart") then
+		node.Transparency = visible and 0 or 1
+		node.CanCollide = visible
+	end
+end
+
+local function respawnNode(node, def)
 	task.delay(def.respawnTime, function()
-		if not part or not part.Parent then
+		if not node or not node.Parent then
 			return
 		end
-		nodeHitsRemaining[part] = nil
-		part.Transparency = 0
-		part.CanCollide = true
+		nodeHitsRemaining[node] = nil
+		setNodeVisible(node, true)
 	end)
 end
 
-local function breakNode(part, def, breakerPlayer)
-	nodeHitsRemaining[part] = nil
+local function breakNode(node, def, breakerPlayer)
+	nodeHitsRemaining[node] = nil
 	awardDrops(breakerPlayer)
-	part.Transparency = 1
-	part.CanCollide = false
-	respawnNode(part, def)
+	setNodeVisible(node, false)
+	respawnNode(node, def)
 end
 
 local function init()
 	ChoppingDefs = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ChoppingDefs"))
 	InventoryService = require(script.Parent:FindFirstChild("InventoryService"))
+	treesFolder = Workspace:FindFirstChild("Trees")
+	if not treesFolder then
+		warn("[ChoppingService] Workspace.Trees folder not found")
+	end
 end
 
 init()
@@ -107,17 +139,17 @@ local remotes = ReplicatedStorage:FindFirstChild("Remotes")
 if remotes then
 	local RequestChop = remotes:FindFirstChild("RequestChop")
 	if RequestChop and RequestChop:IsA("RemoteEvent") then
-		RequestChop.OnServerEvent:Connect(function(player, treePart)
-			if not treePart or not treePart:IsA("BasePart") then
+		RequestChop.OnServerEvent:Connect(function(player, clickedPart)
+			if not clickedPart or not clickedPart:IsA("BasePart") then
 				return
 			end
 
-			local treesFolder = Workspace:FindFirstChild("Trees")
-			if not treesFolder or treePart.Parent ~= treesFolder then
+			local treeNode, nodePos = resolveTreeNode(clickedPart)
+			if not treeNode then
 				return
 			end
 
-			local def = getNodeDef(treePart.Name)
+			local def = getNodeDef(treeNode.Name)
 			if not def then
 				return
 			end
@@ -127,7 +159,7 @@ if remotes then
 			if not hrp or not hrp:IsA("BasePart") then
 				return
 			end
-			if distance3D(hrp.Position, treePart.Position) > CHOP_RANGE then
+			if distance3D(hrp.Position, nodePos) > CHOP_RANGE then
 				return
 			end
 
@@ -137,18 +169,18 @@ if remotes then
 			end
 			lastChop[player] = now
 
-			local canChop, hitsToBreak = applyChoppingHit(player, treePart, def)
+			local canChop, hitsToBreak = applyChoppingHit(player, treeNode, def)
 			if not canChop or not hitsToBreak then
 				return
 			end
 
-			if nodeHitsRemaining[treePart] == nil then
-				nodeHitsRemaining[treePart] = hitsToBreak
+			if nodeHitsRemaining[treeNode] == nil then
+				nodeHitsRemaining[treeNode] = hitsToBreak
 			end
-			nodeHitsRemaining[treePart] = nodeHitsRemaining[treePart] - 1
+			nodeHitsRemaining[treeNode] = nodeHitsRemaining[treeNode] - 1
 
-			if nodeHitsRemaining[treePart] <= 0 then
-				breakNode(treePart, def, player)
+			if nodeHitsRemaining[treeNode] <= 0 then
+				breakNode(treeNode, def, player)
 			end
 		end)
 	end

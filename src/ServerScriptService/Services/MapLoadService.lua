@@ -8,6 +8,8 @@
 local ServerStorage = game:GetService("ServerStorage")
 local Workspace = game:GetService("Workspace")
 
+local MapLoadService = {}
+
 local activeMap = nil
 local centerPart = nil
 local spawnPointsFFA = nil
@@ -54,15 +56,26 @@ function MapLoadService.LoadMap(mapId)
 	if centerPart and not centerPart:IsA("BasePart") then
 		centerPart = nil
 	end
+	if not centerPart then
+		warn("[MapLoadService] Map '" .. mapId .. "' missing Center part")
+	end
 
 	local spawnPoints = activeMap:FindFirstChild("SpawnPoints")
 	if spawnPoints then
 		spawnPointsFFA = spawnPoints:FindFirstChild("FFA")
 		spawnPointsTeam1 = spawnPoints:FindFirstChild("Team1")
 		spawnPointsTeam2 = spawnPoints:FindFirstChild("Team2")
+		if not spawnPointsFFA then warn("[MapLoadService] Map '" .. mapId .. "' missing SpawnPoints.FFA") end
+		if not spawnPointsTeam1 then warn("[MapLoadService] Map '" .. mapId .. "' missing SpawnPoints.Team1") end
+		if not spawnPointsTeam2 then warn("[MapLoadService] Map '" .. mapId .. "' missing SpawnPoints.Team2") end
+	else
+		warn("[MapLoadService] Map '" .. mapId .. "' missing SpawnPoints folder")
 	end
 
 	potionSpawnPoints = activeMap:FindFirstChild("PotionSpawnPoints")
+	if not potionSpawnPoints then
+		warn("[MapLoadService] Map '" .. mapId .. "' missing PotionSpawnPoints")
+	end
 	stormMaxRadius = resolveStormMaxRadius(activeMap)
 
 	return activeMap, centerPart, spawnPointsFFA, spawnPointsTeam1, spawnPointsTeam2, potionSpawnPoints, stormMaxRadius

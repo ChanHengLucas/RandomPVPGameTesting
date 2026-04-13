@@ -147,37 +147,37 @@ return {
 		requires = { DiamondIngot = 4, Wood = 3 },
 		yields = 1,
 	},
-	-- Godly / Unholy tier
-	GodlyPickaxe = {
-		requires = { GodlyIngot = 3, Wood = 4 },
+	-- Angelic / Demonic tier
+	AngelicPickaxe = {
+		requires = { AngelicIngot = 3, Wood = 4 },
 		yields = 1,
 	},
-	GodlySword = {
-		requires = { GodlyIngot = 5, Wood = 2 },
+	AngelicSword = {
+		requires = { AngelicIngot = 5, Wood = 2 },
 		yields = 1,
 	},
-	GodlyAxe = {
-		requires = { GodlyIngot = 2, Wood = 5 },
+	AngelicAxe = {
+		requires = { AngelicIngot = 2, Wood = 5 },
 		yields = 1,
 	},
-	GodlySpear = {
-		requires = { GodlyIngot = 4, Wood = 3 },
+	AngelicSpear = {
+		requires = { AngelicIngot = 4, Wood = 3 },
 		yields = 1,
 	},
-	UnholyPickaxe = {
-		requires = { UnholyIngot = 3, Wood = 4 },
+	DemonicPickaxe = {
+		requires = { DemonicIngot = 3, Wood = 4 },
 		yields = 1,
 	},
-	UnholySword = {
-		requires = { UnholyIngot = 5, Wood = 2 },
+	DemonicSword = {
+		requires = { DemonicIngot = 5, Wood = 2 },
 		yields = 1,
 	},
-	UnholyAxe = {
-		requires = { UnholyIngot = 2, Wood = 5 },
+	DemonicAxe = {
+		requires = { DemonicIngot = 2, Wood = 5 },
 		yields = 1,
 	},
-	UnholySpear = {
-		requires = { UnholyIngot = 4, Wood = 3 },
+	DemonicSpear = {
+		requires = { DemonicIngot = 4, Wood = 3 },
 		yields = 1,
 	},
 	-- Guns and ammo
@@ -247,12 +247,12 @@ return {
 	DiamondChestplate = { requires = { DiamondIngot = 8 }, yields = 1 },
 	DiamondLeggings = { requires = { DiamondIngot = 6 }, yields = 1 },
 	DiamondBoots = { requires = { DiamondIngot = 4 }, yields = 1 },
-	GodlyHelmet = { requires = { GodlyIngot = 4 }, yields = 1 },
-	GodlyChestplate = { requires = { GodlyIngot = 8 }, yields = 1 },
-	GodlyLeggings = { requires = { GodlyIngot = 6 }, yields = 1 },
-	GodlyBoots = { requires = { GodlyIngot = 4 }, yields = 1 },
-	UnholyHelmet = { requires = { UnholyIngot = 4 }, yields = 1 },
-	UnholyChestplate = { requires = { UnholyIngot = 8 }, yields = 1 },
-	UnholyLeggings = { requires = { UnholyIngot = 6 }, yields = 1 },
-	UnholyBoots = { requires = { UnholyIngot = 4 }, yields = 1 },
+	AngelicHelmet = { requires = { AngelicIngot = 4 }, yields = 1 },
+	AngelicChestplate = { requires = { AngelicIngot = 8 }, yields = 1 },
+	AngelicLeggings = { requires = { AngelicIngot = 6 }, yields = 1 },
+	AngelicBoots = { requires = { AngelicIngot = 4 }, yields = 1 },
+	DemonicHelmet = { requires = { DemonicIngot = 4 }, yields = 1 },
+	DemonicChestplate = { requires = { DemonicIngot = 8 }, yields = 1 },
+	DemonicLeggings = { requires = { DemonicIngot = 6 }, yields = 1 },
+	DemonicBoots = { requires = { DemonicIngot = 4 }, yields = 1 },
 }

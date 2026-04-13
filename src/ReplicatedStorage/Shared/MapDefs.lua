@@ -5,9 +5,6 @@
 
 return {
 	-- mapId -> { displayName, order }
-	-- Add 4 maps; ensure ServerStorage.Maps has matching Models
+	-- MVP: ForestArena only. Additional maps can be added later.
 	ForestArena = { displayName = "Forest Arena", order = 1 },
-	DesertDunes = { displayName = "Desert Dunes", order = 2 },
-	IceCavern = { displayName = "Ice Cavern", order = 3 },
-	VolcanicRift = { displayName = "Volcanic Rift", order = 4 },
 }

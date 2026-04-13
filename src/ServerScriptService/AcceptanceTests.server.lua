@@ -46,13 +46,13 @@ local function run()
 		warn("[A2] FAIL: SL_FFA should be single-life")
 		failed = failed + 1
 	end
-	RoundService.SetGameMode("infinite")
+	RoundService.SetGameMode("R_FFA")
 
 	-- C: MiningDefs has HITS_TO_BREAK
 	local MiningDefs = require(Shared:FindFirstChild("MiningDefs"))
 	local hits = MiningDefs.HitsToBreak
-	if hits and hits.WoodPickaxeTool == 15 and hits.DiamondPickaxeTool == 4 and hits.GodlyPickaxeTool == 3 then
-		print("[C] PASS: HITS_TO_BREAK correct (Wood=15, Diamond=4, Godly=3)")
+	if hits and hits.WoodPickaxeTool == 15 and hits.DiamondPickaxeTool == 4 and hits.AngelicPickaxeTool == 3 then
+		print("[C] PASS: HITS_TO_BREAK correct (Wood=15, Diamond=4, Angelic=3)")
 		passed = passed + 1
 	else
 		warn("[C] FAIL: HITS_TO_BREAK incorrect")

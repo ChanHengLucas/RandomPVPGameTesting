@@ -3,7 +3,7 @@
 	Single source of truth for armor damage reduction.
 	Per-tier full-set DR: Copper 10%, Iron 20%, Gold 30%, Sapphire 35%, Emerald 40%, Ruby 45%, Diamond 50%, Angelic 60%, Demonic 60%
 	Piece distribution: Helmet 20%, Chest 40%, Legs 25%, Boots 15%
-	affinity: "godly" | "unholy" for Angelic/Demonic multiplier in combat
+	affinity: "angelic" | "demonic" for Angelic/Demonic multiplier in combat
 ]]
 
 -- reduction = tierDR * pieceWeight; piece weights: Helmet 20%, Chest 40%, Legs 25%, Boots 15%
@@ -43,14 +43,14 @@ return {
 	DiamondChestplate = { reduction = 0.20 },
 	DiamondLeggings = { reduction = 0.125 },
 	DiamondBoots = { reduction = 0.075 },
-	-- Angelic/Godly 60%
-	GodlyHelmet = { reduction = 0.12, affinity = "godly" },
-	GodlyChestplate = { reduction = 0.24, affinity = "godly" },
-	GodlyLeggings = { reduction = 0.15, affinity = "godly" },
-	GodlyBoots = { reduction = 0.09, affinity = "godly" },
-	-- Demonic/Unholy 60%
-	UnholyHelmet = { reduction = 0.12, affinity = "unholy" },
-	UnholyChestplate = { reduction = 0.24, affinity = "unholy" },
-	UnholyLeggings = { reduction = 0.15, affinity = "unholy" },
-	UnholyBoots = { reduction = 0.09, affinity = "unholy" },
+	-- Angelic/Angelic 60%
+	AngelicHelmet = { reduction = 0.12, affinity = "angelic" },
+	AngelicChestplate = { reduction = 0.24, affinity = "angelic" },
+	AngelicLeggings = { reduction = 0.15, affinity = "angelic" },
+	AngelicBoots = { reduction = 0.09, affinity = "angelic" },
+	-- Demonic/Demonic 60%
+	DemonicHelmet = { reduction = 0.12, affinity = "demonic" },
+	DemonicChestplate = { reduction = 0.24, affinity = "demonic" },
+	DemonicLeggings = { reduction = 0.15, affinity = "demonic" },
+	DemonicBoots = { reduction = 0.09, affinity = "demonic" },
 }

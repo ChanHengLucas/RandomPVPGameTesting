@@ -25,10 +25,10 @@ A fast-paced PvP game where players collect resources, craft instantly, and figh
 - **Pickups** – Click parts in `workspace.Pickups` to collect resources
 - **Crafting** – Recipes for tools, weapons, armor, stations
 - **Equip** – Equip tools, guns, armor from inventory
-- **Combat** – Melee (sword, spear), guns, godly/unholy affinity
+- **Combat** – Melee (sword, spear), guns, angelic/demonic affinity
 
 **Gathering**
-- **Mining** – Ore nodes (Stone→Diamond, Godly, Unholy)
+- **Mining** – Ore nodes (Stone→Diamond, Angelic, Demonic)
 - **Chopping** – Trees for Wood, fruit (RNG)
 - **AutoSmelt** – Ores to ingots automatically (no fuel)
 - **AutoConvert** – Raw meat → CookedMeat, fruit → juices

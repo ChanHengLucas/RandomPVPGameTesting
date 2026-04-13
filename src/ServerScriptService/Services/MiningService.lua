@@ -3,6 +3,7 @@
 	Handles RequestMine: player mines an ore node.
 	Generic OreNode: drops determined by OreRngWeights.RollOreDrop at break.
 	Validates: part in workspace.Ores, distance <= 10, cooldown 0.4s, tool tier.
+	Supports both Model-based and BasePart-based ore nodes.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -18,17 +19,36 @@ local InventoryService
 local OreRngWeights
 local RoundService
 
+local oresFolder = nil
+
 local function init()
 	MiningDefs = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MiningDefs"))
 	InventoryService = require(script.Parent:FindFirstChild("InventoryService"))
 	OreRngWeights = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("OreRngWeights"))
 	RoundService = require(script.Parent:FindFirstChild("RoundService"))
+	oresFolder = Workspace:FindFirstChild("Ores")
+	if not oresFolder then
+		warn("[MiningService] Workspace.Ores folder not found")
+	end
 end
 
 init()
 
 local function distance3D(a, b)
 	return (a - b).Magnitude
+end
+
+-- Resolve a clicked BasePart to its parent ore node (Model or BasePart) in the Ores folder
+local function resolveOreNode(clickedPart)
+	if not oresFolder then return nil, nil end
+	local current = clickedPart
+	while current and current ~= oresFolder do
+		if current.Parent == oresFolder then
+			return current, current:IsA("Model") and current:GetPivot().Position or current.Position
+		end
+		current = current.Parent
+	end
+	return nil, nil
 end
 
 local function getEquippedTool(player)
@@ -85,41 +105,53 @@ local function awardOreDrops(player, roundTime)
 	end
 end
 
-local function respawnNode(part, def)
+local function setNodeVisible(node, visible)
+	if node:IsA("Model") then
+		for _, child in ipairs(node:GetDescendants()) do
+			if child:IsA("BasePart") then
+				child.Transparency = visible and 0 or 1
+				child.CanCollide = visible
+			end
+		end
+	elseif node:IsA("BasePart") then
+		node.Transparency = visible and 0 or 1
+		node.CanCollide = visible
+	end
+end
+
+local function respawnNode(node, def)
 	task.delay(def.respawnTime, function()
-		if not part or not part.Parent then
+		if not node or not node.Parent then
 			return
 		end
-		nodeHitsRemaining[part] = nil
-		part.Transparency = 0
-		part.CanCollide = true
+		nodeHitsRemaining[node] = nil
+		setNodeVisible(node, true)
 	end)
 end
 
-local function breakNode(part, def, breakerPlayer)
-	nodeHitsRemaining[part] = nil
+local function breakNode(node, def, breakerPlayer)
+	nodeHitsRemaining[node] = nil
 	local roundTime = RoundService.GetCurrentRoundTime()
 	awardOreDrops(breakerPlayer, roundTime)
-	part.Transparency = 1
-	part.CanCollide = false
-	respawnNode(part, def)
+	setNodeVisible(node, false)
+	respawnNode(node, def)
 end
 
 local remotes = ReplicatedStorage:FindFirstChild("Remotes")
 if remotes then
 	local RequestMine = remotes:FindFirstChild("RequestMine")
 	if RequestMine and RequestMine:IsA("RemoteEvent") then
-		RequestMine.OnServerEvent:Connect(function(player, orePart)
-			if not orePart or not orePart:IsA("BasePart") then
+		RequestMine.OnServerEvent:Connect(function(player, clickedPart)
+			if not clickedPart or not clickedPart:IsA("BasePart") then
 				return
 			end
 
-			local oresFolder = Workspace:FindFirstChild("Ores")
-			if not oresFolder or orePart.Parent ~= oresFolder then
+			local oreNode, nodePos = resolveOreNode(clickedPart)
+			if not oreNode then
 				return
 			end
 
-			local def = getNodeDef(orePart.Name)
+			local def = getNodeDef(oreNode.Name)
 			if not def then
 				return
 			end
@@ -129,7 +161,7 @@ if remotes then
 			if not hrp or not hrp:IsA("BasePart") then
 				return
 			end
-			if distance3D(hrp.Position, orePart.Position) > MINING_RANGE then
+			if distance3D(hrp.Position, nodePos) > MINING_RANGE then
 				return
 			end
 
@@ -139,18 +171,18 @@ if remotes then
 			end
 			lastMine[player] = now
 
-			local canMine, hitsToBreak = applyMiningHit(player, orePart, def)
+			local canMine, hitsToBreak = applyMiningHit(player, oreNode, def)
 			if not canMine or not hitsToBreak then
 				return
 			end
 
-			if nodeHitsRemaining[orePart] == nil then
-				nodeHitsRemaining[orePart] = hitsToBreak
+			if nodeHitsRemaining[oreNode] == nil then
+				nodeHitsRemaining[oreNode] = hitsToBreak
 			end
-			nodeHitsRemaining[orePart] = nodeHitsRemaining[orePart] - 1
+			nodeHitsRemaining[oreNode] = nodeHitsRemaining[oreNode] - 1
 
-			if nodeHitsRemaining[orePart] <= 0 then
-				breakNode(orePart, def, player)
+			if nodeHitsRemaining[oreNode] <= 0 then
+				breakNode(oreNode, def, player)
 			end
 		end)
 	end

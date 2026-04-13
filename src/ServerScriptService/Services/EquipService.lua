@@ -22,8 +22,8 @@ local ITEM_TO_TOOL = {
 	EmeraldSword = "EmeraldSwordTool",
 	RubySword = "RubySwordTool",
 	DiamondSword = "DiamondSwordTool",
-	GodlySword = "GodlySwordTool",
-	UnholySword = "UnholySwordTool",
+	AngelicSword = "AngelicSwordTool",
+	DemonicSword = "DemonicSwordTool",
 	-- Spears
 	WoodSpear = "WoodSpearTool",
 	CopperSpear = "CopperSpearTool",
@@ -33,8 +33,8 @@ local ITEM_TO_TOOL = {
 	EmeraldSpear = "EmeraldSpearTool",
 	RubySpear = "RubySpearTool",
 	DiamondSpear = "DiamondSpearTool",
-	GodlySpear = "GodlySpearTool",
-	UnholySpear = "UnholySpearTool",
+	AngelicSpear = "AngelicSpearTool",
+	DemonicSpear = "DemonicSpearTool",
 	-- Pickaxes
 	WoodPickaxe = "WoodPickaxeTool",
 	StonePickaxe = "StonePickaxeTool",
@@ -45,8 +45,8 @@ local ITEM_TO_TOOL = {
 	EmeraldPickaxe = "EmeraldPickaxeTool",
 	RubyPickaxe = "RubyPickaxeTool",
 	DiamondPickaxe = "DiamondPickaxeTool",
-	GodlyPickaxe = "GodlyPickaxeTool",
-	UnholyPickaxe = "UnholyPickaxeTool",
+	AngelicPickaxe = "AngelicPickaxeTool",
+	DemonicPickaxe = "DemonicPickaxeTool",
 	-- Axes
 	WoodAxe = "WoodAxeTool",
 	StoneAxe = "StoneAxeTool",
@@ -57,8 +57,8 @@ local ITEM_TO_TOOL = {
 	EmeraldAxe = "EmeraldAxeTool",
 	RubyAxe = "RubyAxeTool",
 	DiamondAxe = "DiamondAxeTool",
-	GodlyAxe = "GodlyAxeTool",
-	UnholyAxe = "UnholyAxeTool",
+	AngelicAxe = "AngelicAxeTool",
+	DemonicAxe = "DemonicAxeTool",
 	-- Guns
 	Pistol = "PistolTool",
 	Rifle = "RifleTool",

@@ -16,8 +16,8 @@ local HITS_TO_BREAK = {
 	EmeraldPickaxeTool = 6,
 	RubyPickaxeTool = 5,
 	DiamondPickaxeTool = 4,
-	GodlyPickaxeTool = 3,
-	UnholyPickaxeTool = 3,
+	AngelicPickaxeTool = 3,
+	DemonicPickaxeTool = 3,
 }
 
 -- Tier order for "X or better" checks (higher index = better)
@@ -31,8 +31,8 @@ local TIER_ORDER = {
 	EmeraldPickaxeTool = 7,
 	RubyPickaxeTool = 8,
 	DiamondPickaxeTool = 9,
-	GodlyPickaxeTool = 10,
-	UnholyPickaxeTool = 10,
+	AngelicPickaxeTool = 10,
+	DemonicPickaxeTool = 10,
 }
 
 return {

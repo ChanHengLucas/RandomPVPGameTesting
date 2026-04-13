@@ -3,7 +3,7 @@
 	Tracks active buffs/debuffs per player.
 	Regen: heals 1 HP per second for duration.
 	Superiority: max HP 150, max stamina 150 for duration.
-	CombatService queries GetTargetAffinity for godly/unholy (Phase 6).
+	CombatService queries GetTargetAffinity for angelic/demonic affinity.
 ]]
 
 local RunService = game:GetService("RunService")

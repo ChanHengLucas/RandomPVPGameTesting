@@ -3,13 +3,13 @@
 	For best-tool-replaces-worse rule.
 	Map itemName -> { category, tier }
 	Category: sword, spear, axe, pickaxe, armor
-	Tier: 1=Wood/Stone, 2=Copper, 3=Iron, 4=Gold, 5=Sapphire, 6=Emerald, 7=Ruby, 8=Diamond, 9=Godly/Unholy
-	Godly/Unholy (Angelic/Demonic) are always craftable - tier 9.
+	Tier: 1=Wood/Stone, 2=Copper, 3=Iron, 4=Gold, 5=Sapphire, 6=Emerald, 7=Ruby, 8=Diamond, 9=Angelic/Demonic
+	Angelic/Demonic (Angelic/Demonic) are always craftable - tier 9.
 ]]
 
 -- Check in order of specificity (longer names first to avoid "Iron" matching "Iron" in "IronIngot" wrongly)
-local TIER_CHECK_ORDER = { "Diamond", "Sapphire", "Emerald", "Ruby", "Godly", "Unholy", "Gold", "Iron", "Copper", "Stone", "Wood" }
-local TIER_LEVEL = { Wood = 1, Stone = 2, Copper = 3, Iron = 4, Gold = 5, Sapphire = 6, Emerald = 7, Ruby = 8, Diamond = 9, Godly = 10, Unholy = 10 }
+local TIER_CHECK_ORDER = { "Diamond", "Sapphire", "Emerald", "Ruby", "Angelic", "Demonic", "Gold", "Iron", "Copper", "Stone", "Wood" }
+local TIER_LEVEL = { Wood = 1, Stone = 2, Copper = 3, Iron = 4, Gold = 5, Sapphire = 6, Emerald = 7, Ruby = 8, Diamond = 9, Angelic = 10, Demonic = 10 }
 
 local function getTierFromItem(itemName)
 	for _, material in ipairs(TIER_CHECK_ORDER) do
@@ -32,7 +32,7 @@ local function getCategory(itemName)
 end
 
 local function isAngelicOrDemonic(itemName)
-	return itemName:find("Godly") or itemName:find("Unholy")
+	return itemName:find("Angelic") or itemName:find("Demonic")
 end
 
 return {

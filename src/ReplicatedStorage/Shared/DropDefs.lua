@@ -2,7 +2,7 @@
 	DropDefs.lua
 	Categorizes items for death drop logic.
 	STARTER_TOOLS_NEVER_DROP: tools that never drop on death.
-	MATERIALS: ores, ingots, ammo, raw - subject to 30% drop in infinite-life.
+	MATERIALS: ores, ingots, ammo, raw - subject to 30% drop in respawn modes.
 ]]
 
 return {
@@ -12,7 +12,7 @@ return {
 		WoodSwordTool = true,
 	},
 
-	-- Items in MATERIALS category: 30% dropped in infinite-life mode
+	-- Items in MATERIALS category: 30% dropped in respawn modes (R_FFA, R_TDM)
 	MATERIALS = {
 		-- Ores
 		Stone = true,
@@ -23,8 +23,8 @@ return {
 		EmeraldOre = true,
 		RubyOre = true,
 		DiamondOre = true,
-		GodlyOre = true,
-		UnholyOre = true,
+		AngelicOre = true,
+		DemonicOre = true,
 		Rock = true,
 		-- Ingots
 		CopperIngot = true,
@@ -34,8 +34,8 @@ return {
 		EmeraldIngot = true,
 		RubyIngot = true,
 		DiamondIngot = true,
-		GodlyIngot = true,
-		UnholyIngot = true,
+		AngelicIngot = true,
+		DemonicIngot = true,
 		-- Ammo
 		PistolAmmo = true,
 		RifleAmmo = true,

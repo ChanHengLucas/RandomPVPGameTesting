@@ -8,12 +8,14 @@ local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local RoundService = {}
+
 local RoundDefs
 local ROUND_LENGTH = 300
 local DEFAULT_RESPAWN_TIME = 5
 
 local state = "Lobby"
-local gameMode = "infinite"
+local gameMode = "R_FFA"
 local roundStartTime = nil
 local roundActive = false
 local bestTierAchieved = {}
@@ -58,13 +60,13 @@ function RoundService.GetGameMode()
 end
 
 function RoundService.SetGameMode(mode)
-	if mode == "infinite" or mode == "single" or mode == "SL_FFA" or mode == "SL_TDM" or mode == "R_FFA" or mode == "R_TDM" then
+	if mode == "SL_FFA" or mode == "SL_TDM" or mode == "R_FFA" or mode == "R_TDM" then
 		gameMode = mode
 	end
 end
 
 function RoundService.IsRespawnMode()
-	return gameMode == "infinite" or gameMode == "R_FFA" or gameMode == "R_TDM"
+	return gameMode == "R_FFA" or gameMode == "R_TDM"
 end
 
 function RoundService.SetSpawnProtection(player, durationSeconds)
@@ -300,7 +302,12 @@ local function runCycle()
 
 	RoundService.SetState("Lobby")
 	fireRoundStateUpdate()
-	task.wait(lobbyInitial)
+	-- Countdown through lobby wait
+	local lobbyEnd = tick() + lobbyInitial
+	while tick() < lobbyEnd do
+		fireRoundStateUpdate()
+		task.wait(1)
+	end
 
 	while true do
 		RoundService.SetState("Voting")
@@ -312,7 +319,28 @@ local function runCycle()
 				vs.StartVoting()
 			end
 		end
-		task.wait(votingDuration)
+		-- Countdown through voting
+		local votingEnd = tick() + votingDuration
+		while tick() < votingEnd do
+			-- Send phaseTimeLeft so client can show countdown
+			local remotes2 = ReplicatedStorage:FindFirstChild("Remotes")
+			if remotes2 then
+				local evt2 = remotes2:FindFirstChild("RoundStateUpdate")
+				if evt2 and evt2:IsA("RemoteEvent") then
+					for _, p in ipairs(Players:GetPlayers()) do
+						evt2:FireClient(p, {
+							state = "Voting",
+							mode = gameMode,
+							timeLeft = 0,
+							mapId = currentMapId,
+							isSuddenDeath = false,
+							phaseTimeLeft = math.max(0, votingEnd - tick()),
+						})
+					end
+				end
+			end
+			task.wait(1)
+		end
 
 		local mapId, mode = nil, "R_FFA"
 		if VotingService then
@@ -338,7 +366,27 @@ local function runCycle()
 			local ts = require(TeamService)
 			if ts.AssignTeamsForTDM then ts.AssignTeamsForTDM() end
 		end
-		task.wait(intermissionDuration)
+		-- Countdown through intermission
+		local intermEnd = tick() + intermissionDuration
+		while tick() < intermEnd do
+			local remotes3 = ReplicatedStorage:FindFirstChild("Remotes")
+			if remotes3 then
+				local evt3 = remotes3:FindFirstChild("RoundStateUpdate")
+				if evt3 and evt3:IsA("RemoteEvent") then
+					for _, p in ipairs(Players:GetPlayers()) do
+						evt3:FireClient(p, {
+							state = "Intermission",
+							mode = mode,
+							timeLeft = 0,
+							mapId = mapId,
+							isSuddenDeath = false,
+							phaseTimeLeft = math.max(0, intermEnd - tick()),
+						})
+					end
+				end
+			end
+			task.wait(1)
+		end
 
 		-- Spawn players at map positions
 		if MapLoadService then
@@ -402,7 +450,8 @@ local function runCycle()
 
 		if mode == "SL_FFA" or mode == "SL_TDM" then
 			while true do
-				task.wait(0.5)
+				task.wait(1)
+				fireRoundStateUpdate()
 				local alive = countAlivePlayers()
 				if mode == "SL_FFA" then
 					if alive <= 1 then break end
@@ -412,7 +461,12 @@ local function runCycle()
 				end
 			end
 		else
-			task.wait(ROUND_LENGTH)
+			-- Respawn mode: wait ROUND_LENGTH with periodic HUD updates
+			local roundEnd = tick() + ROUND_LENGTH
+			while tick() < roundEnd do
+				fireRoundStateUpdate()
+				task.wait(1)
+			end
 			local tied = false
 			if mode == "R_FFA" then
 				local tiedList = getTiedPlayersRFFA()
@@ -513,11 +567,20 @@ local function runCycle()
 			local vs = require(VotingService)
 			if vs.SetLastPlayedMode then vs.SetLastPlayedMode(mode) end
 		end
-		task.wait(endRoundDuration)
+		-- Countdown through EndRound
+		local endRoundEnd = tick() + endRoundDuration
+		while tick() < endRoundEnd do
+			fireRoundStateUpdate()
+			task.wait(1)
+		end
 
 		RoundService.SetState("Lobby")
-		fireRoundStateUpdate()
-		task.wait(lobbyPostRound)
+		-- Countdown through Lobby post-round
+		local lobbyEnd2 = tick() + lobbyPostRound
+		while tick() < lobbyEnd2 do
+			fireRoundStateUpdate()
+			task.wait(1)
+		end
 		::continue::
 	end
 end

@@ -16,8 +16,8 @@ local HITS_TO_BREAK = {
 	EmeraldAxeTool = 4,
 	RubyAxeTool = 3,
 	DiamondAxeTool = 3,
-	GodlyAxeTool = 2,
-	UnholyAxeTool = 2,
+	AngelicAxeTool = 2,
+	DemonicAxeTool = 2,
 }
 
 local TIER_ORDER = {
@@ -30,8 +30,8 @@ local TIER_ORDER = {
 	EmeraldAxeTool = 7,
 	RubyAxeTool = 8,
 	DiamondAxeTool = 9,
-	GodlyAxeTool = 10,
-	UnholyAxeTool = 10,
+	AngelicAxeTool = 10,
+	DemonicAxeTool = 10,
 }
 
 return {

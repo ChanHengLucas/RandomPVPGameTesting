@@ -5,7 +5,7 @@
 ]]
 
 return {
-	-- Tier order (ascending): 1 = lowest, 10 = Diamond. Godly/Unholy are special (11/12).
+	-- Tier order (ascending): 1 = lowest, 10 = Diamond. Angelic/Demonic are special (11/12).
 	TierOrder = {
 		Stone = 1,
 		Copper = 3,
@@ -15,8 +15,8 @@ return {
 		Emerald = 7,
 		Ruby = 8,
 		Diamond = 9,
-		Godly = 10,
-		Unholy = 11,
+		Angelic = 10,
+		Demonic = 11,
 	},
 
 	-- Rarity weights for RNG drops (higher = more common)
@@ -29,7 +29,7 @@ return {
 		Emerald = 10,
 		Ruby = 8,
 		Diamond = 5,
-		Godly = 1,
-		Unholy = 1,
+		Angelic = 1,
+		Demonic = 1,
 	},
 }

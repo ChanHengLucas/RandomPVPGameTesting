@@ -2,7 +2,7 @@
 	ArmorService
 	Tracks equipped armor per player.
 	RequestEquipArmor(player, slot, itemName) - slot: Head, Body, Legs, Feet.
-	GetTargetAffinity(player) - for godly/unholy combat.
+	GetTargetAffinity(player) - for angelic/demonic combat.
 	GetDamageReduction(player) - total reduction 0..1.
 ]]
 
