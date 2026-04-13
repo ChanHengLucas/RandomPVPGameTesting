@@ -141,6 +141,12 @@ function RoundService.EndRound()
 	end
 	for _, player in ipairs(Players:GetPlayers()) do
 		player.RespawnTime = DEFAULT_RESPAWN_TIME
+		-- Force-respawn dead players so they're alive for the next round
+		local char = player.Character
+		local hum = char and char:FindFirstChild("Humanoid")
+		if not hum or hum.Health <= 0 then
+			pcall(function() player:LoadCharacter() end)
+		end
 	end
 end
 
@@ -310,6 +316,7 @@ local function runCycle()
 	end
 
 	while true do
+		local roundOk, roundErr = pcall(function()
 		RoundService.SetState("Voting")
 		fireRoundStateUpdate()
 		local VotingService = script.Parent:FindFirstChild("VotingService")
@@ -586,6 +593,22 @@ local function runCycle()
 			task.wait(1)
 		end
 		end -- end if not skipRound (EndRound block)
+		end) -- end pcall
+		if not roundOk then
+			warn("[RoundService] Round cycle error: " .. tostring(roundErr))
+			-- Attempt recovery: clean up and go to Lobby
+			pcall(function()
+				RoundService.EndRound()
+				local MapLoadSvc = script.Parent:FindFirstChild("MapLoadService")
+				if MapLoadSvc then
+					local mls = require(MapLoadSvc)
+					if mls.UnloadMap then mls.UnloadMap() end
+				end
+			end)
+			RoundService.SetState("Lobby")
+			fireRoundStateUpdate()
+			task.wait(3)
+		end
 	end
 end
 
