@@ -643,9 +643,9 @@ local function runCycle()
 			winnerTeamId = getWinnerRTDM()
 		end
 		fireWinnerNotification(winnerPlayer, winnerTeamId)
-		end -- end if not skipRound
 
-		if not skipRound then
+		-- === END-OF-ROUND CLEANUP (same skipRound block) ===
+
 		-- 1) Set state so onSpawn won't grant tools
 		RoundService.SetState("EndRound")
 		fireRoundStateUpdate()
@@ -675,7 +675,7 @@ local function runCycle()
 			fireRoundStateUpdate()
 			task.wait(1)
 		end
-		end -- end if not skipRound (EndRound block)
+		end -- end if not skipRound
 		end) -- end pcall
 		if not roundOk then
 			warn("[RoundService] Round cycle error: " .. tostring(roundErr))

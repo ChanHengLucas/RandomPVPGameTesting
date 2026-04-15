@@ -82,15 +82,19 @@ local function onSpawn(player)
 	task.defer(function()
 		local st = RoundService.GetState()
 		if st == "ActiveRound" or st == "SuddenDeath" then
-			grantStarterTools(player)
-			grantStarterMaterials(player)
-			if RoundService.IsRespawnMode() then
-				RoundService.SetSpawnProtection(player, 1)
+			-- Skip if round JUST started — explicit grant in RoundService already handled it.
+			-- Only grant for genuine mid-round respawns (player died and respawned).
+			local roundTime = RoundService.GetCurrentRoundTime()
+			if roundTime >= 3 then
+				grantStarterTools(player)
+				grantStarterMaterials(player)
+				if RoundService.IsRespawnMode() then
+					RoundService.SetSpawnProtection(player, 1)
+				end
 			end
 		else
 			-- Not in an active round: ensure no tools
 			stripAllTools(player)
-			-- Double-check after a short wait (catch late tool grants)
 			task.wait(0.2)
 			stripAllTools(player)
 		end
