@@ -184,15 +184,19 @@ function RoundService.EndRound()
 		stripTools(player)
 		pcall(function()
 			player:LoadCharacter()
-			-- Explicit teleport to lobby (don't rely on SpawnLocation selection)
+			-- Explicit teleport to lobby
 			local char = player.Character
 			local hrp = char and char:FindFirstChild("HumanoidRootPart")
 			if hrp then
 				hrp.CFrame = CFrame.new(lobbyPos)
 			end
-			-- Strip tools AGAIN after LoadCharacter in case onSpawn granted them
-			stripTools(player)
 		end)
+	end
+	-- Wait for all deferred onSpawn callbacks to run (they grant tools),
+	-- then strip everything they gave. This is the definitive lobby cleanup.
+	task.wait(0.5)
+	for _, player in ipairs(Players:GetPlayers()) do
+		stripTools(player)
 	end
 end
 
@@ -368,6 +372,10 @@ local function runCycle()
 		while #Players:GetPlayers() < MIN_PLAYERS do
 			RoundService.SetState("Lobby")
 			fireRoundStateUpdate()
+			-- Keep lobby clean: strip any tools players might have
+			for _, player in ipairs(Players:GetPlayers()) do
+				stripTools(player)
+			end
 			task.wait(2)
 		end
 
@@ -511,35 +519,11 @@ local function runCycle()
 		RoundService.SetState("ActiveRound")
 		RoundService.StartRound()
 		fireRoundStateUpdate()
-
-		-- Grant starter tools + materials now that state is ActiveRound
-		for _, player in ipairs(Players:GetPlayers()) do
-			pcall(function()
-				local backpack = player:FindFirstChild("Backpack")
-				if not backpack then return end
-				local ServerStorage = game:GetService("ServerStorage")
-				for _, toolName in ipairs({"WoodPickaxeTool", "WoodAxeTool", "WoodSwordTool"}) do
-					local template = ServerStorage:FindFirstChild(toolName)
-					if template and template:IsA("Tool") then
-						local clone = template:Clone()
-						clone.Parent = backpack
-					end
-				end
-				RoundService.SetBestTier(player, "pickaxe", 1)
-				RoundService.SetBestTier(player, "axe", 1)
-				RoundService.SetBestTier(player, "sword", 1)
-				local InventorySvc2 = script.Parent:FindFirstChild("InventoryService")
-				local invMod = InventorySvc2 and require(InventorySvc2)
-				if invMod then
-					invMod.AddItem(player, "Wood", 5)
-					invMod.AddItem(player, "Rock", 3)
-				end
-			end)
-		end
+		-- Tools are granted by RespawnService.onSpawn (triggered by LoadCharacter during Intermission)
 
 		if mode == "SL_FFA" or mode == "SL_TDM" then
 			while true do
-				task.wait(1)
+				task.wait(0.5)
 				fireRoundStateUpdate()
 				local alive = countAlivePlayers()
 				if mode == "SL_FFA" then

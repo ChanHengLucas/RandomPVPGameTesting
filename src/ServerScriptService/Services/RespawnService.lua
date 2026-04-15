@@ -80,23 +80,13 @@ end
 
 local function onSpawn(player)
 	task.defer(function()
+		-- Always grant starter tools on every spawn.
+		-- Lobby cleanup is handled by RoundService stripping tools after EndRound.
+		grantStarterTools(player)
+		grantStarterMaterials(player)
 		local st = RoundService.GetState()
-		if st == "ActiveRound" or st == "SuddenDeath" then
-			-- Skip if round JUST started — explicit grant in RoundService already handled it.
-			-- Only grant for genuine mid-round respawns (player died and respawned).
-			local roundTime = RoundService.GetCurrentRoundTime()
-			if roundTime >= 3 then
-				grantStarterTools(player)
-				grantStarterMaterials(player)
-				if RoundService.IsRespawnMode() then
-					RoundService.SetSpawnProtection(player, 1)
-				end
-			end
-		else
-			-- Not in an active round: ensure no tools
-			stripAllTools(player)
-			task.wait(0.2)
-			stripAllTools(player)
+		if (st == "ActiveRound" or st == "SuddenDeath") and RoundService.IsRespawnMode() then
+			RoundService.SetSpawnProtection(player, 1)
 		end
 	end)
 end
