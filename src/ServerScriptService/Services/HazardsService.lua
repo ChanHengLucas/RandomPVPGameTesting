@@ -89,11 +89,26 @@ local function checkVoid(player)
 	end
 end
 
+local VOID_KILL_Y = -50
+
+local function checkFallVoid(player)
+	local character = player.Character
+	if not character then return end
+	local hrp = character:FindFirstChild("HumanoidRootPart")
+	local humanoid = character:FindFirstChild("Humanoid")
+	if not hrp or not humanoid or humanoid.Health <= 0 then return end
+	if RoundService.HasSpawnProtection(player) then return end
+	if hrp.Position.Y < VOID_KILL_Y then
+		DamagePipeline.ApplyTrueDamage(humanoid, math.huge)
+	end
+end
+
 RunService.Heartbeat:Connect(function()
 	for _, player in ipairs(Players:GetPlayers()) do
 		task.spawn(function()
 			checkLava(player)
 			checkVoid(player)
+			checkFallVoid(player)
 		end)
 	end
 end)

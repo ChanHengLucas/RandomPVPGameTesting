@@ -154,6 +154,48 @@ local function getLobbySpawnPosition()
 	return Vector3.new(-500, 55, 0) -- fallback lobby position
 end
 
+-- Grant starter tools to a player (event-based Backpack wait)
+local function grantRoundTools(player)
+	local backpack = player:WaitForChild("Backpack", 5)
+	if not backpack then return end
+	local ServerStorage = game:GetService("ServerStorage")
+	for _, toolName in ipairs({"WoodPickaxeTool", "WoodAxeTool", "WoodSwordTool"}) do
+		local existing = backpack:FindFirstChild(toolName)
+		if existing then existing:Destroy() end
+		local template = ServerStorage:FindFirstChild(toolName)
+		if template and template:IsA("Tool") then
+			template:Clone().Parent = backpack
+		end
+	end
+	RoundService.SetBestTier(player, "pickaxe", 1)
+	RoundService.SetBestTier(player, "axe", 1)
+	RoundService.SetBestTier(player, "sword", 1)
+end
+
+-- Send one player to lobby with event-based waits
+local function sendPlayerToLobby(player, lobbyPos)
+	pcall(function()
+		player.RespawnTime = DEFAULT_RESPAWN_TIME
+		stripTools(player)
+		player:LoadCharacter()
+		local char = player.Character or player.CharacterAdded:Wait()
+		local hrp = char:WaitForChild("HumanoidRootPart", 5)
+		if hrp then
+			hrp.CFrame = CFrame.new(lobbyPos)
+		end
+		stripTools(player)
+	end)
+end
+
+-- Send all players to lobby
+local function sendAllToLobby()
+	local lobbyPos = getLobbySpawnPosition()
+	for _, player in ipairs(Players:GetPlayers()) do
+		sendPlayerToLobby(player, lobbyPos)
+	end
+end
+
+-- EndRound: data cleanup ONLY (no LoadCharacter, no teleport)
 function RoundService.EndRound()
 	roundActive = false
 	roundStartTime = nil
@@ -167,36 +209,12 @@ function RoundService.EndRound()
 		local ts = require(TeamService)
 		if ts.ClearTeams then ts.ClearTeams() end
 	end
-
-	-- Clear all inventories
 	local InventorySvc = script.Parent:FindFirstChild("InventoryService")
 	if InventorySvc then
 		local invSvc = require(InventorySvc)
 		for _, player in ipairs(Players:GetPlayers()) do
 			if invSvc.ClearInventory then invSvc.ClearInventory(player) end
 		end
-	end
-
-	-- Send every player back to lobby with a clean character
-	local lobbyPos = getLobbySpawnPosition()
-	for _, player in ipairs(Players:GetPlayers()) do
-		player.RespawnTime = DEFAULT_RESPAWN_TIME
-		stripTools(player)
-		pcall(function()
-			player:LoadCharacter()
-			-- Explicit teleport to lobby
-			local char = player.Character
-			local hrp = char and char:FindFirstChild("HumanoidRootPart")
-			if hrp then
-				hrp.CFrame = CFrame.new(lobbyPos)
-			end
-		end)
-	end
-	-- Wait for all deferred onSpawn callbacks to run (they grant tools),
-	-- then strip everything they gave. This is the definitive lobby cleanup.
-	task.wait(0.5)
-	for _, player in ipairs(Players:GetPlayers()) do
-		stripTools(player)
 	end
 end
 
@@ -372,11 +390,14 @@ local function runCycle()
 		while #Players:GetPlayers() < MIN_PLAYERS do
 			RoundService.SetState("Lobby")
 			fireRoundStateUpdate()
-			-- Keep lobby clean: strip any tools players might have
 			for _, player in ipairs(Players:GetPlayers()) do
 				stripTools(player)
 			end
 			task.wait(2)
+		end
+		-- Final strip right before voting starts
+		for _, player in ipairs(Players:GetPlayers()) do
+			stripTools(player)
 		end
 
 		local roundOk, roundErr = pcall(function()
@@ -519,7 +540,19 @@ local function runCycle()
 		RoundService.SetState("ActiveRound")
 		RoundService.StartRound()
 		fireRoundStateUpdate()
-		-- Tools are granted by RespawnService.onSpawn (triggered by LoadCharacter during Intermission)
+
+		-- Explicitly grant starter tools + materials (event-based Backpack wait)
+		local InventorySvc2 = script.Parent:FindFirstChild("InventoryService")
+		local invMod = InventorySvc2 and require(InventorySvc2)
+		for _, player in ipairs(Players:GetPlayers()) do
+			pcall(function()
+				grantRoundTools(player)
+				if invMod then
+					invMod.AddItem(player, "Wood", 5)
+					invMod.AddItem(player, "Rock", 3)
+				end
+			end)
+		end
 
 		if mode == "SL_FFA" or mode == "SL_TDM" then
 			while true do
@@ -628,35 +661,49 @@ local function runCycle()
 		end
 		fireWinnerNotification(winnerPlayer, winnerTeamId)
 
-		-- === END-OF-ROUND CLEANUP (same skipRound block) ===
+		-- === END-OF-ROUND CLEANUP ===
 
-		-- 1) Set state so onSpawn won't grant tools
+		-- 1) State transition
 		RoundService.SetState("EndRound")
 		fireRoundStateUpdate()
-		-- 2) Unload map BEFORE respawning so LoadCharacter only finds lobby spawn
+
+		-- 2) Unload map before respawning
 		local MapLoadSvc = script.Parent:FindFirstChild("MapLoadService")
 		if MapLoadSvc then
-			local mls = require(MapLoadSvc)
-			if mls.UnloadMap then mls.UnloadMap() end
+			local mls2 = require(MapLoadSvc)
+			if mls2.UnloadMap then mls2.UnloadMap() end
 		end
-		-- 3) Full cleanup: clear inv, strip tools, respawn everyone at lobby
+
+		-- 3) Reset data (inventory, teams)
 		RoundService.EndRound()
+
+		-- 4) Teleport everyone to lobby (event-based waits, strips tools)
+		sendAllToLobby()
+
+		-- 5) Record last played mode
 		if VotingService then
 			local vs = require(VotingService)
 			if vs.SetLastPlayedMode then vs.SetLastPlayedMode(mode) end
 		end
-		-- Countdown through EndRound
+
+		-- 6) Visible "ROUND OVER" pause — strip tools continuously
 		local endRoundEnd = tick() + endRoundDuration
 		while tick() < endRoundEnd do
 			fireRoundStateUpdate()
+			for _, p in ipairs(Players:GetPlayers()) do
+				stripTools(p)
+			end
 			task.wait(1)
 		end
 
+		-- 7) Lobby phase — strip tools continuously
 		RoundService.SetState("Lobby")
-		-- Countdown through Lobby post-round
 		local lobbyEnd2 = tick() + lobbyPostRound
 		while tick() < lobbyEnd2 do
 			fireRoundStateUpdate()
+			for _, p in ipairs(Players:GetPlayers()) do
+				stripTools(p)
+			end
 			task.wait(1)
 		end
 		end -- end if not skipRound
@@ -671,6 +718,7 @@ local function runCycle()
 					if mls.UnloadMap then mls.UnloadMap() end
 				end
 				RoundService.EndRound()
+				sendAllToLobby()
 			end)
 			RoundService.SetState("Lobby")
 			fireRoundStateUpdate()
