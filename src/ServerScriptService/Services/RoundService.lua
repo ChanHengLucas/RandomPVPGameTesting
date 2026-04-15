@@ -126,6 +126,34 @@ function RoundService.StartRound()
 	roundActive = true
 end
 
+-- Helper: strip every Tool from a player's Backpack and Character
+local function stripTools(player)
+	local backpack = player:FindFirstChild("Backpack")
+	if backpack then
+		for _, child in ipairs(backpack:GetChildren()) do
+			if child:IsA("Tool") then child:Destroy() end
+		end
+	end
+	local char = player.Character
+	if char then
+		for _, child in ipairs(char:GetChildren()) do
+			if child:IsA("Tool") then child:Destroy() end
+		end
+	end
+end
+
+-- Helper: find lobby spawn position
+local function getLobbySpawnPosition()
+	local lobby = game.Workspace:FindFirstChild("Lobby")
+	if lobby then
+		local spawn = lobby:FindFirstChild("LobbySpawn")
+		if spawn and spawn:IsA("BasePart") then
+			return spawn.Position + Vector3.new(0, 3, 0)
+		end
+	end
+	return Vector3.new(-500, 55, 0) -- fallback lobby position
+end
+
 function RoundService.EndRound()
 	roundActive = false
 	roundStartTime = nil
@@ -149,25 +177,22 @@ function RoundService.EndRound()
 		end
 	end
 
+	-- Send every player back to lobby with a clean character
+	local lobbyPos = getLobbySpawnPosition()
 	for _, player in ipairs(Players:GetPlayers()) do
 		player.RespawnTime = DEFAULT_RESPAWN_TIME
-
-		-- Strip all tools (players get fresh tools next round start)
-		local backpack = player:FindFirstChild("Backpack")
-		if backpack then
-			for _, child in ipairs(backpack:GetChildren()) do
-				if child:IsA("Tool") then child:Destroy() end
+		stripTools(player)
+		pcall(function()
+			player:LoadCharacter()
+			-- Explicit teleport to lobby (don't rely on SpawnLocation selection)
+			local char = player.Character
+			local hrp = char and char:FindFirstChild("HumanoidRootPart")
+			if hrp then
+				hrp.CFrame = CFrame.new(lobbyPos)
 			end
-		end
-		local char = player.Character
-		if char then
-			for _, child in ipairs(char:GetChildren()) do
-				if child:IsA("Tool") then child:Destroy() end
-			end
-		end
-
-		-- Respawn ALL players to lobby (resets health, position, removes old character)
-		pcall(function() player:LoadCharacter() end)
+			-- Strip tools AGAIN after LoadCharacter in case onSpawn granted them
+			stripTools(player)
+		end)
 	end
 end
 
@@ -621,15 +646,17 @@ local function runCycle()
 		end -- end if not skipRound
 
 		if not skipRound then
-		-- Set state BEFORE cleanup so onSpawn doesn't give tools
+		-- 1) Set state so onSpawn won't grant tools
 		RoundService.SetState("EndRound")
 		fireRoundStateUpdate()
-		RoundService.EndRound()
+		-- 2) Unload map BEFORE respawning so LoadCharacter only finds lobby spawn
 		local MapLoadSvc = script.Parent:FindFirstChild("MapLoadService")
 		if MapLoadSvc then
 			local mls = require(MapLoadSvc)
 			if mls.UnloadMap then mls.UnloadMap() end
 		end
+		-- 3) Full cleanup: clear inv, strip tools, respawn everyone at lobby
+		RoundService.EndRound()
 		if VotingService then
 			local vs = require(VotingService)
 			if vs.SetLastPlayedMode then vs.SetLastPlayedMode(mode) end
@@ -652,14 +679,14 @@ local function runCycle()
 		end) -- end pcall
 		if not roundOk then
 			warn("[RoundService] Round cycle error: " .. tostring(roundErr))
-			-- Attempt recovery: clean up and go to Lobby
 			pcall(function()
-				RoundService.EndRound()
+				RoundService.SetState("EndRound")
 				local MapLoadSvc = script.Parent:FindFirstChild("MapLoadService")
 				if MapLoadSvc then
 					local mls = require(MapLoadSvc)
 					if mls.UnloadMap then mls.UnloadMap() end
 				end
+				RoundService.EndRound()
 			end)
 			RoundService.SetState("Lobby")
 			fireRoundStateUpdate()

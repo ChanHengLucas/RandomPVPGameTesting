@@ -88,7 +88,10 @@ local function onSpawn(player)
 				RoundService.SetSpawnProtection(player, 1)
 			end
 		else
-			-- In lobby/voting/intermission: no tools
+			-- Not in an active round: ensure no tools
+			stripAllTools(player)
+			-- Double-check after a short wait (catch late tool grants)
+			task.wait(0.2)
 			stripAllTools(player)
 		end
 	end)
