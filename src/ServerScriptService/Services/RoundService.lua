@@ -166,13 +166,8 @@ function RoundService.EndRound()
 			end
 		end
 
-		-- Heal to full and force-respawn dead players
-		local hum = char and char:FindFirstChild("Humanoid")
-		if hum and hum.Health > 0 then
-			hum.Health = hum.MaxHealth
-		else
-			pcall(function() player:LoadCharacter() end)
-		end
+		-- Respawn ALL players to lobby (resets health, position, removes old character)
+		pcall(function() player:LoadCharacter() end)
 	end
 end
 
@@ -492,6 +487,31 @@ local function runCycle()
 		RoundService.StartRound()
 		fireRoundStateUpdate()
 
+		-- Grant starter tools + materials now that state is ActiveRound
+		for _, player in ipairs(Players:GetPlayers()) do
+			pcall(function()
+				local backpack = player:FindFirstChild("Backpack")
+				if not backpack then return end
+				local ServerStorage = game:GetService("ServerStorage")
+				for _, toolName in ipairs({"WoodPickaxeTool", "WoodAxeTool", "WoodSwordTool"}) do
+					local template = ServerStorage:FindFirstChild(toolName)
+					if template and template:IsA("Tool") then
+						local clone = template:Clone()
+						clone.Parent = backpack
+					end
+				end
+				RoundService.SetBestTier(player, "pickaxe", 1)
+				RoundService.SetBestTier(player, "axe", 1)
+				RoundService.SetBestTier(player, "sword", 1)
+				local InventorySvc2 = script.Parent:FindFirstChild("InventoryService")
+				local invMod = InventorySvc2 and require(InventorySvc2)
+				if invMod then
+					invMod.AddItem(player, "Wood", 5)
+					invMod.AddItem(player, "Rock", 3)
+				end
+			end)
+		end
+
 		if mode == "SL_FFA" or mode == "SL_TDM" then
 			while true do
 				task.wait(1)
@@ -601,14 +621,15 @@ local function runCycle()
 		end -- end if not skipRound
 
 		if not skipRound then
+		-- Set state BEFORE cleanup so onSpawn doesn't give tools
+		RoundService.SetState("EndRound")
+		fireRoundStateUpdate()
 		RoundService.EndRound()
 		local MapLoadSvc = script.Parent:FindFirstChild("MapLoadService")
 		if MapLoadSvc then
 			local mls = require(MapLoadSvc)
 			if mls.UnloadMap then mls.UnloadMap() end
 		end
-		RoundService.SetState("EndRound")
-		fireRoundStateUpdate()
 		if VotingService then
 			local vs = require(VotingService)
 			if vs.SetLastPlayedMode then vs.SetLastPlayedMode(mode) end
