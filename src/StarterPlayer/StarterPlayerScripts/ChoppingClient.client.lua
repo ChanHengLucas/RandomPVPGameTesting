@@ -48,3 +48,32 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		tryChop()
 	end
 end)
+
+-- Listen for server-confirmed hits to play wood-chop sounds
+local choppingHit = remotes and remotes:FindFirstChild("ChoppingHit")
+if choppingHit and choppingHit:IsA("RemoteEvent") then
+	local function playSoundAt(pos, id, vol)
+		local part = Instance.new("Part")
+		part.Anchored = true
+		part.CanCollide = false
+		part.Transparency = 1
+		part.Size = Vector3.new(0.1, 0.1, 0.1)
+		part.Position = pos or player.Character and player.Character:GetPivot().Position or Vector3.zero
+		part.Parent = workspace
+		local sound = Instance.new("Sound")
+		sound.SoundId = id
+		sound.Volume = vol or 0.8
+		sound.Parent = part
+		sound:Play()
+		sound.Ended:Connect(function() part:Destroy() end)
+		task.delay(3, function() if part.Parent then part:Destroy() end end)
+	end
+
+	choppingHit.OnClientEvent:Connect(function(data)
+		if not data then return end
+		playSoundAt(data.position, "rbxassetid://7086597487", 0.7)
+		if data.broken then
+			playSoundAt(data.position, "rbxassetid://5810753638", 1.0)
+		end
+	end)
+end

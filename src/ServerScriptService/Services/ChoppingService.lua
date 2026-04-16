@@ -179,8 +179,18 @@ if remotes then
 			end
 			nodeHitsRemaining[treeNode] = nodeHitsRemaining[treeNode] - 1
 
-			if nodeHitsRemaining[treeNode] <= 0 then
+			local broken = nodeHitsRemaining[treeNode] <= 0
+			if broken then
 				breakNode(treeNode, def, player)
+			end
+
+			-- Fire ChoppingHit remote so client can play server-confirmed hit sound
+			local ChoppingHit = remotes:FindFirstChild("ChoppingHit")
+			if ChoppingHit and ChoppingHit:IsA("RemoteEvent") then
+				ChoppingHit:FireClient(player, {
+					position = nodePos,
+					broken = broken,
+				})
 			end
 		end)
 	end

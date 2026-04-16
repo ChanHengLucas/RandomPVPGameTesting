@@ -181,8 +181,18 @@ if remotes then
 			end
 			nodeHitsRemaining[oreNode] = nodeHitsRemaining[oreNode] - 1
 
-			if nodeHitsRemaining[oreNode] <= 0 then
+			local broken = nodeHitsRemaining[oreNode] <= 0
+			if broken then
 				breakNode(oreNode, def, player)
+			end
+
+			-- Fire MiningHit remote so client can play server-confirmed hit sound
+			local MiningHit = remotes:FindFirstChild("MiningHit")
+			if MiningHit and MiningHit:IsA("RemoteEvent") then
+				MiningHit:FireClient(player, {
+					position = nodePos,
+					broken = broken,
+				})
 			end
 		end)
 	end
