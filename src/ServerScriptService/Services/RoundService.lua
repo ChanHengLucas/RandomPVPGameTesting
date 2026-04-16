@@ -172,30 +172,17 @@ local function grantRoundTools(player)
 	RoundService.SetBestTier(player, "sword", 1)
 end
 
--- Send one player to lobby. Uses PivotTo for reliable model teleport.
--- Zeroes velocity so physics doesn't drift the character after the teleport.
+-- Send one player to lobby with event-based waits
 local function sendPlayerToLobby(player, lobbyPos)
 	pcall(function()
 		player.RespawnTime = DEFAULT_RESPAWN_TIME
 		stripTools(player)
-
-		-- Always respawn via LoadCharacter so we get a clean character
-		-- at the lobby SpawnLocation (known position, known state).
 		player:LoadCharacter()
 		local char = player.Character or player.CharacterAdded:Wait()
-
-		-- Wait for HumanoidRootPart so the character is fully assembled
 		local hrp = char:WaitForChild("HumanoidRootPart", 5)
 		if hrp then
-			-- Zero velocity BEFORE teleport (prevents drift)
-			hrp.AssemblyLinearVelocity = Vector3.zero
-			hrp.AssemblyAngularVelocity = Vector3.zero
+			hrp.CFrame = CFrame.new(lobbyPos)
 		end
-
-		-- PivotTo moves the entire character model (better than HRP.CFrame)
-		char:PivotTo(CFrame.new(lobbyPos))
-
-		-- Strip any tools onSpawn may have granted during LoadCharacter
 		stripTools(player)
 	end)
 end
@@ -680,19 +667,18 @@ local function runCycle()
 		RoundService.SetState("EndRound")
 		fireRoundStateUpdate()
 
-		-- 2) Reset data (inventory, teams) — no LoadCharacter here
-		RoundService.EndRound()
-
-		-- 3) Teleport everyone to lobby WHILE map is still loaded so
-		--    alive players (winners) have solid ground when respawned
-		sendAllToLobby()
-
-		-- 4) NOW unload the map — nobody is on it anymore
+		-- 2) Unload map before respawning
 		local MapLoadSvc = script.Parent:FindFirstChild("MapLoadService")
 		if MapLoadSvc then
 			local mls2 = require(MapLoadSvc)
 			if mls2.UnloadMap then mls2.UnloadMap() end
 		end
+
+		-- 3) Reset data (inventory, teams)
+		RoundService.EndRound()
+
+		-- 4) Teleport everyone to lobby (event-based waits, strips tools)
+		sendAllToLobby()
 
 		-- 5) Record last played mode
 		if VotingService then
@@ -726,14 +712,13 @@ local function runCycle()
 			warn("[RoundService] Round cycle error: " .. tostring(roundErr))
 			pcall(function()
 				RoundService.SetState("EndRound")
-				-- Same order as success path: cleanup, teleport, THEN unload
-				RoundService.EndRound()
-				sendAllToLobby()
 				local MapLoadSvc = script.Parent:FindFirstChild("MapLoadService")
 				if MapLoadSvc then
 					local mls = require(MapLoadSvc)
 					if mls.UnloadMap then mls.UnloadMap() end
 				end
+				RoundService.EndRound()
+				sendAllToLobby()
 			end)
 			RoundService.SetState("Lobby")
 			fireRoundStateUpdate()
