@@ -172,26 +172,50 @@ local function grantRoundTools(player)
 	RoundService.SetBestTier(player, "sword", 1)
 end
 
--- Send one player to lobby with event-based waits
-local function sendPlayerToLobby(player, lobbyPos)
+-- Teleport a single winner's existing character to the lobby.
+-- Uses PivotTo for reliable model teleport. No LoadCharacter — winners
+-- are alive, so we just move their current character.
+-- NOTE: Player.RespawnTime is NOT a valid property in this Roblox API
+-- (assigning it errors), so we don't touch it. Dead players auto-respawn
+-- at LobbySpawn via Players.RespawnTime (default 3s, service-level).
+local function teleportWinnerToLobby(player, lobbyPos)
 	pcall(function()
-		player.RespawnTime = DEFAULT_RESPAWN_TIME
 		stripTools(player)
-		player:LoadCharacter()
-		local char = player.Character or player.CharacterAdded:Wait()
-		local hrp = char:WaitForChild("HumanoidRootPart", 5)
+
+		local char = player.Character
+		if not char then return end
+
+		local hum = char:FindFirstChild("Humanoid")
+		local hrp = char:FindFirstChild("HumanoidRootPart")
+
 		if hrp then
-			hrp.CFrame = CFrame.new(lobbyPos)
+			-- Zero velocity first so physics doesn't carry them away
+			hrp.AssemblyLinearVelocity = Vector3.zero
+			hrp.AssemblyAngularVelocity = Vector3.zero
 		end
+
+		-- PivotTo moves the entire character model
+		char:PivotTo(CFrame.new(lobbyPos))
+
+		-- Heal to full so they enter lobby in a clean state
+		if hum and hum.Health > 0 then
+			hum.Health = hum.MaxHealth
+		end
+
 		stripTools(player)
 	end)
 end
 
--- Send all players to lobby
-local function sendAllToLobby()
+-- Teleport every winner in the list to the lobby.
+-- Dead (losing) players are NOT touched — Roblox auto-respawn places
+-- them at LobbySpawn within 3 seconds (the only SpawnLocation).
+local function sendWinnersToLobby(winners)
+	if not winners then return end
 	local lobbyPos = getLobbySpawnPosition()
-	for _, player in ipairs(Players:GetPlayers()) do
-		sendPlayerToLobby(player, lobbyPos)
+	for _, player in ipairs(winners) do
+		if player and player:IsA("Player") then
+			teleportWinnerToLobby(player, lobbyPos)
+		end
 	end
 end
 
@@ -583,9 +607,9 @@ local function runCycle()
 
 			if tied then
 				RoundService.SetState("SuddenDeath")
-				for _, p in ipairs(Players:GetPlayers()) do
-					p.RespawnTime = math.huge
-				end
+				-- Note: Player.RespawnTime is not a valid property in this Roblox API.
+				-- In sudden death, any losers who die auto-respawn at LobbySpawn (3s),
+				-- which takes them out of the fight — acceptable behavior.
 				local tiedPlayers = {}
 				if mode == "R_FFA" then
 					tiedPlayers = getTiedPlayersRFFA()
@@ -661,24 +685,48 @@ local function runCycle()
 		end
 		fireWinnerNotification(winnerPlayer, winnerTeamId)
 
+		-- Build winner list for teleport. Dead losers are left to auto-respawn at LobbySpawn.
+		local winners = {}
+		if winnerPlayer then
+			-- FFA winner (SL_FFA, R_FFA sudden death, or R_FFA by kill count)
+			table.insert(winners, winnerPlayer)
+		elseif winnerTeamId then
+			-- TDM winner: all alive players on the winning team
+			local TeamService = script.Parent:FindFirstChild("TeamService")
+			if TeamService then
+				local ts = require(TeamService)
+				for _, p in ipairs(Players:GetPlayers()) do
+					local hum = p.Character and p.Character:FindFirstChild("Humanoid")
+					if hum and hum.Health > 0 then
+						local tId = ts.GetTeam and ts.GetTeam(p)
+						if tId == winnerTeamId then
+							table.insert(winners, p)
+						end
+					end
+				end
+			end
+		end
+
 		-- === END-OF-ROUND CLEANUP ===
 
 		-- 1) State transition
 		RoundService.SetState("EndRound")
 		fireRoundStateUpdate()
 
-		-- 2) Unload map before respawning
+		-- 2) Teleport winner(s) to lobby BEFORE unloading the map so they
+		--    have solid ground under them. Dead losers are untouched —
+		--    Roblox auto-respawn sends them to LobbySpawn naturally.
+		sendWinnersToLobby(winners)
+
+		-- 3) Reset data (inventory, teams)
+		RoundService.EndRound()
+
+		-- 4) Unload map (winners already moved, losers auto-respawn elsewhere)
 		local MapLoadSvc = script.Parent:FindFirstChild("MapLoadService")
 		if MapLoadSvc then
 			local mls2 = require(MapLoadSvc)
 			if mls2.UnloadMap then mls2.UnloadMap() end
 		end
-
-		-- 3) Reset data (inventory, teams)
-		RoundService.EndRound()
-
-		-- 4) Teleport everyone to lobby (event-based waits, strips tools)
-		sendAllToLobby()
 
 		-- 5) Record last played mode
 		if VotingService then
@@ -718,7 +766,9 @@ local function runCycle()
 					if mls.UnloadMap then mls.UnloadMap() end
 				end
 				RoundService.EndRound()
-				sendAllToLobby()
+				-- No forced teleport on error — next round's Intermission LoadCharacter
+				-- will place everyone at their team/FFA spawn. Any stuck players
+				-- auto-respawn at LobbySpawn via default behavior.
 			end)
 			RoundService.SetState("Lobby")
 			fireRoundStateUpdate()

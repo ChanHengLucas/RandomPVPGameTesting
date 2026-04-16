@@ -182,8 +182,11 @@ local function dropSingleLife(player, killer)
 		tool:Destroy()
 	end
 
-	-- Single-life: no respawn until round reset
-	player.RespawnTime = math.huge
+	-- Single-life: character stays dead for Players.RespawnTime seconds (default 3s),
+	-- then Roblox auto-respawns at LobbySpawn (the only SpawnLocation). RoundService
+	-- teleports the winner(s) at EndRound; losers naturally end up in the lobby
+	-- via default auto-respawn. `Player.RespawnTime` is NOT a valid property in this
+	-- Roblox API and assigning to it errors, so we don't use it.
 end
 
 local function onPlayerDied(player, killer)
