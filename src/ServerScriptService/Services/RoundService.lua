@@ -172,35 +172,17 @@ local function grantRoundTools(player)
 	RoundService.SetBestTier(player, "sword", 1)
 end
 
--- Send one player to lobby.
--- Alive players (winners): CFrame teleport existing character + heal, no LoadCharacter.
--- Dead players (losers): LoadCharacter to get a fresh character, then CFrame teleport.
--- Avoiding LoadCharacter on alive players prevents Humanoid.Died from firing via destruction.
+-- Send one player to lobby with event-based waits
 local function sendPlayerToLobby(player, lobbyPos)
 	pcall(function()
 		player.RespawnTime = DEFAULT_RESPAWN_TIME
 		stripTools(player)
-
-		local char = player.Character
-		local hum = char and char:FindFirstChild("Humanoid")
-
-		if hum and hum.Health > 0 then
-			-- ALIVE (winner): teleport existing character, don't destroy it.
-			local hrp = char:FindFirstChild("HumanoidRootPart")
-			if hrp then
-				hrp.CFrame = CFrame.new(lobbyPos)
-			end
-			hum.Health = hum.MaxHealth
-		else
-			-- DEAD (loser): need a fresh character.
-			player:LoadCharacter()
-			local newChar = player.Character or player.CharacterAdded:Wait()
-			local hrp = newChar:WaitForChild("HumanoidRootPart", 5)
-			if hrp then
-				hrp.CFrame = CFrame.new(lobbyPos)
-			end
+		player:LoadCharacter()
+		local char = player.Character or player.CharacterAdded:Wait()
+		local hrp = char:WaitForChild("HumanoidRootPart", 5)
+		if hrp then
+			hrp.CFrame = CFrame.new(lobbyPos)
 		end
-
 		stripTools(player)
 	end)
 end
