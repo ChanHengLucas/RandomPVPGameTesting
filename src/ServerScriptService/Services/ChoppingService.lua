@@ -74,15 +74,19 @@ local function applyChoppingHit(player, part, def)
 	return true, hitsToBreak
 end
 
-local function awardDrops(player)
+-- Drops vary by tree type:
+--   OakTree / TreeNode: wood only
+--   AppleTree: wood + 1-2 apples guaranteed
+--   OrangeTree: wood + 1-2 oranges guaranteed
+local function awardDrops(player, treeName)
 	local woodAmount = math.random(3, 5)
 	InventoryService.AddItem(player, "Wood", woodAmount)
-	if math.random() < 0.35 then
-		InventoryService.AddItem(player, "Apple", 1)
+	if treeName == "AppleTree" then
+		InventoryService.AddItem(player, "Apple", math.random(1, 2))
+	elseif treeName == "OrangeTree" then
+		InventoryService.AddItem(player, "Orange", math.random(1, 2))
 	end
-	if math.random() < 0.20 then
-		InventoryService.AddItem(player, "Orange", 1)
-	end
+	-- OakTree and generic TreeNode: no fruit
 end
 
 local function getNodeDef(partName)
@@ -119,7 +123,7 @@ end
 
 local function breakNode(node, def, breakerPlayer)
 	nodeHitsRemaining[node] = nil
-	awardDrops(breakerPlayer)
+	awardDrops(breakerPlayer, node.Name)
 	setNodeVisible(node, false)
 	respawnNode(node, def)
 end

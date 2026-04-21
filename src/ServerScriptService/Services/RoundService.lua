@@ -503,27 +503,57 @@ local function runCycle()
 			task.wait(1)
 		end
 
-		-- Spawn players at map positions
+		-- Spawn players at map positions (shuffled pools, no duplicates)
 		if MapLoadService then
 			local mls = require(MapLoadService)
-			local function pickSpawn(folder)
-				if not folder or not folder:IsA("Folder") then return nil end
-				local parts = folder:GetChildren()
-				if #parts == 0 then return nil end
-				local p = parts[math.random(1, #parts)]
-				return p:IsA("BasePart") and p.Position or p:GetPivot().Position
+			-- Build a shuffled pool of spawn positions from a folder
+			local function shuffledPool(folder)
+				local pool = {}
+				if not folder or not folder:IsA("Folder") then return pool end
+				for _, c in ipairs(folder:GetChildren()) do
+					if c:IsA("BasePart") then
+						table.insert(pool, c.Position)
+					end
+				end
+				-- Fisher-Yates shuffle
+				for i = #pool, 2, -1 do
+					local j = math.random(1, i)
+					pool[i], pool[j] = pool[j], pool[i]
+				end
+				return pool
 			end
+
+			local ffaPool = shuffledPool(mls.GetSpawnPointsFFA and mls.GetSpawnPointsFFA())
+			local team1Pool = shuffledPool(mls.GetSpawnPointsTeam1 and mls.GetSpawnPointsTeam1())
+			local team2Pool = shuffledPool(mls.GetSpawnPointsTeam2 and mls.GetSpawnPointsTeam2())
+			local ffaIdx, t1Idx, t2Idx = 0, 0, 0
+			local function nextFFA()
+				if #ffaPool == 0 then return nil end
+				ffaIdx = (ffaIdx % #ffaPool) + 1
+				return ffaPool[ffaIdx]
+			end
+			local function nextT1()
+				if #team1Pool == 0 then return nil end
+				t1Idx = (t1Idx % #team1Pool) + 1
+				return team1Pool[t1Idx]
+			end
+			local function nextT2()
+				if #team2Pool == 0 then return nil end
+				t2Idx = (t2Idx % #team2Pool) + 1
+				return team2Pool[t2Idx]
+			end
+
 			for _, player in ipairs(Players:GetPlayers()) do
 				local pos = nil
 				if mode == "SL_FFA" or mode == "R_FFA" then
-					pos = pickSpawn(mls.GetSpawnPointsFFA and mls.GetSpawnPointsFFA())
+					pos = nextFFA()
 				else
 					local ts = TeamService and require(TeamService)
 					local teamId = ts and ts.GetTeam and ts.GetTeam(player)
 					if teamId == 1 then
-						pos = pickSpawn(mls.GetSpawnPointsTeam1 and mls.GetSpawnPointsTeam1())
+						pos = nextT1()
 					else
-						pos = pickSpawn(mls.GetSpawnPointsTeam2 and mls.GetSpawnPointsTeam2())
+						pos = nextT2()
 					end
 				end
 				if pos and player.LoadCharacter then
