@@ -78,6 +78,53 @@ local function stripAllTools(player)
 	end
 end
 
+-- Pick a random spawn position from a folder of BasePart spawn markers.
+local function randomSpawnFrom(folder)
+	if not folder or not folder:IsA("Folder") then return nil end
+	local parts = {}
+	for _, c in ipairs(folder:GetChildren()) do
+		if c:IsA("BasePart") then table.insert(parts, c) end
+	end
+	if #parts == 0 then return nil end
+	return parts[math.random(1, #parts)].Position
+end
+
+-- Teleport a freshly spawned character to an appropriate map spawn for the current mode.
+local function teleportToMapSpawn(player)
+	local Services = script.Parent
+	local MapLoadSvc = Services:FindFirstChild("MapLoadService")
+	if not MapLoadSvc then return end
+	local mls = require(MapLoadSvc)
+
+	local mode = RoundService.GetGameMode()
+	local pos = nil
+	if mode == "R_FFA" or mode == "SL_FFA" then
+		pos = randomSpawnFrom(mls.GetSpawnPointsFFA and mls.GetSpawnPointsFFA())
+	elseif mode == "R_TDM" or mode == "SL_TDM" then
+		local TeamSvc = Services:FindFirstChild("TeamService")
+		local teamId = nil
+		if TeamSvc then
+			local ts = require(TeamSvc)
+			teamId = ts.GetTeam and ts.GetTeam(player)
+		end
+		if teamId == 1 then
+			pos = randomSpawnFrom(mls.GetSpawnPointsTeam1 and mls.GetSpawnPointsTeam1())
+		else
+			pos = randomSpawnFrom(mls.GetSpawnPointsTeam2 and mls.GetSpawnPointsTeam2())
+		end
+	end
+
+	if not pos then return end
+	local char = player.Character
+	if not char then return end
+	local hrp = char:FindFirstChild("HumanoidRootPart")
+	if hrp then
+		hrp.AssemblyLinearVelocity = Vector3.zero
+		hrp.AssemblyAngularVelocity = Vector3.zero
+	end
+	char:PivotTo(CFrame.new(pos))
+end
+
 local function onSpawn(player)
 	task.defer(function()
 		local st = RoundService.GetState()
@@ -85,11 +132,14 @@ local function onSpawn(player)
 			-- Only grant for genuine mid-round respawns (roundTime > 2).
 			-- Round-start tools are granted explicitly by RoundService.
 			if RoundService.GetCurrentRoundTime() > 2 then
-				grantStarterTools(player)
-				grantStarterMaterials(player)
+				-- Teleport fresh character to map spawn (only R_* modes respawn mid-round;
+				-- SL_* players stay dead). Keep guard for safety.
 				if RoundService.IsRespawnMode() then
+					teleportToMapSpawn(player)
 					RoundService.SetSpawnProtection(player, 1)
 				end
+				grantStarterTools(player)
+				grantStarterMaterials(player)
 			end
 		end
 		-- All other states: do nothing. RoundService handles grants and strips.

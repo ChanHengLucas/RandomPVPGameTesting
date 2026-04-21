@@ -196,6 +196,10 @@ local function onPlayerDied(player, killer)
 			rs.RecordKill(killer, player)
 		end
 	end
+	-- Track deaths for the leaderboard regardless of killer
+	if RoundService.RecordDeath then
+		RoundService.RecordDeath(player)
+	end
 	if isRespawnMode() then
 		dropRespawnMode(player, killer)
 	else

@@ -18,7 +18,9 @@ local mapVotes = {}
 local modeVotes = {}
 local votingStartTime = nil
 local votingStartTick = nil
-local lastPlayedMode = "SL_TDM"
+-- Start empty so first round offers ALL modes including SL_TDM.
+-- Set to the most recent mode after each round via SetLastPlayedMode.
+local lastPlayedMode = ""
 local mapOptions = {}
 local modeOptions = {}
 local playerJoinTimes = {}
@@ -73,13 +75,14 @@ local function fireVotingUpdate()
 		timeLeft = math.max(0, 15 - (tick() - votingStartTime))
 	end
 
+	-- mapVotes / modeVotes store Player -> id, so count occurrences of each id
 	local mapTallies = {}
-	for mapId, count in pairs(mapVotes) do
-		mapTallies[mapId] = count
+	for _, mapId in pairs(mapVotes) do
+		mapTallies[mapId] = (mapTallies[mapId] or 0) + 1
 	end
 	local modeTallies = {}
-	for modeId, count in pairs(modeVotes) do
-		modeTallies[modeId] = count
+	for _, modeId in pairs(modeVotes) do
+		modeTallies[modeId] = (modeTallies[modeId] or 0) + 1
 	end
 
 	for _, player in ipairs(Players:GetPlayers()) do
@@ -108,8 +111,8 @@ function VotingService.RecordMapVote(player, mapId)
 	if RoundService.GetState() ~= "Voting" then return false end
 	if not MapDefs[mapId] then return false end
 	if not isEligibleToVote(player) then return false end
-	if mapVotes[player] then return false end
 
+	-- Allow re-voting: overwrite previous selection
 	mapVotes[player] = mapId
 	fireVotingUpdate()
 	return true
@@ -123,8 +126,8 @@ function VotingService.RecordModeVote(player, modeId)
 	end
 	if not valid then return false end
 	if not isEligibleToVote(player) then return false end
-	if modeVotes[player] then return false end
 
+	-- Allow re-voting: overwrite previous selection
 	modeVotes[player] = modeId
 	fireVotingUpdate()
 	return true

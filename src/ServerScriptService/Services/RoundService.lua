@@ -26,6 +26,7 @@ local stateChangeCallbacks = {}
 local cycleTask = nil
 local roundKills = {}
 local roundTeamKills = {}
+local roundDeaths = {}
 
 local function init()
 	RoundDefs = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("RoundDefs"))
@@ -228,6 +229,7 @@ function RoundService.EndRound()
 	suddenDeathInvulnUntil = {}
 	roundKills = {}
 	roundTeamKills = {}
+	roundDeaths = {}
 	local TeamService = script.Parent:FindFirstChild("TeamService")
 	if TeamService then
 		local ts = require(TeamService)
@@ -289,6 +291,15 @@ function RoundService.GetTeamKills(teamId)
 	return roundTeamKills[teamId] or 0
 end
 
+function RoundService.RecordDeath(player)
+	if not player or not player:IsA("Player") then return end
+	roundDeaths[player] = (roundDeaths[player] or 0) + 1
+end
+
+function RoundService.GetDeaths(player)
+	return roundDeaths[player] or 0
+end
+
 local function fireRoundStateUpdate()
 	local remotes = ReplicatedStorage:FindFirstChild("Remotes")
 	if not remotes then return end
@@ -304,6 +315,51 @@ local function fireRoundStateUpdate()
 			mapId = currentMapId,
 			isSuddenDeath = isSD,
 		})
+	end
+end
+
+-- Build and broadcast the leaderboard snapshot for all players.
+-- FFA snapshot: list of { name, kills, deaths } sorted by kills desc.
+-- TDM snapshot: team kill totals + per-player kills/deaths under each team.
+local function fireLeaderboardUpdate()
+	local remotes = ReplicatedStorage:FindFirstChild("Remotes")
+	if not remotes then return end
+	local evt = remotes:FindFirstChild("LeaderboardUpdate")
+	if not evt or not evt:IsA("RemoteEvent") then return end
+
+	local ffa = {}
+	local tdm = { team1 = 0, team2 = 0, team1Players = {}, team2Players = {} }
+
+	local TeamService = script.Parent:FindFirstChild("TeamService")
+	local ts = TeamService and require(TeamService) or nil
+
+	for _, p in ipairs(Players:GetPlayers()) do
+		local entry = {
+			name = p.Name,
+			kills = roundKills[p] or 0,
+			deaths = roundDeaths[p] or 0,
+		}
+		table.insert(ffa, entry)
+		local teamId = ts and ts.GetTeam and ts.GetTeam(p) or nil
+		if teamId == 1 then
+			table.insert(tdm.team1Players, entry)
+		elseif teamId == 2 then
+			table.insert(tdm.team2Players, entry)
+		end
+	end
+	table.sort(ffa, function(a, b) return a.kills > b.kills end)
+	tdm.team1 = roundTeamKills[1] or 0
+	tdm.team2 = roundTeamKills[2] or 0
+
+	local payload = {
+		mode = gameMode,
+		state = state,
+		ffa = ffa,
+		tdm = tdm,
+	}
+
+	for _, player in ipairs(Players:GetPlayers()) do
+		evt:FireClient(player, payload)
 	end
 end
 
@@ -809,6 +865,14 @@ end
 
 task.defer(function()
 	cycleTask = task.spawn(runCycle)
+end)
+
+-- Periodic leaderboard broadcast (every 2s)
+task.spawn(function()
+	while true do
+		task.wait(2)
+		pcall(fireLeaderboardUpdate)
+	end
 end)
 
 return RoundService
