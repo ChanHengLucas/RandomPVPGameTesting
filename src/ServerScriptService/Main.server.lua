@@ -41,6 +41,7 @@ if Services then
 	require(Services:FindFirstChild("AutoConvertService"))
 	require(Services:FindFirstChild("DeathDropService"))
 	require(Services:FindFirstChild("RespawnService"))
+	require(Services:FindFirstChild("AutoEquipService"))
 end
 
 print("FastCraft PvP server started")
